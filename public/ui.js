@@ -1,4 +1,11 @@
 import { $ } from "./dom.js";
+import {
+  buildBehaviorSummary,
+  buildNetworkIdentitySummary,
+  buildReasonEvidence,
+  buildWebRtcComparison,
+  buildWorkerConsistencyRows
+} from "./report-view-model.js";
 import { computeBehavior } from "./runtime.js";
 import { bool, escapeHtml, formatValue } from "./utils.js";
 
@@ -13,6 +20,10 @@ export function renderReport(state, report, options = {}) {
   renderCoverage(report.detections || []);
   renderServerSummary(report.server || {});
   renderBrowserSummary(state, report.client || {});
+  renderNetworkIdentity(report);
+  renderWebRtcComparison(report);
+  renderWorkerConsistency(report);
+  renderBehaviorSummary(report);
   renderRuntime(state);
   updateHeroReadoutFromReport(report);
 
@@ -31,8 +42,24 @@ function renderReasons(reasons) {
     <div class="reason">
       <strong>${escapeHtml(reason.id)} &middot; ${escapeHtml(reason.severity)} &middot; -${escapeHtml(String(reason.points))}</strong>
       <span>${escapeHtml(reason.message)}</span>
+      ${renderReasonEvidence(reason)}
     </div>
   `).join("");
+}
+
+function renderReasonEvidence(reason) {
+  const evidence = buildReasonEvidence(reason);
+  if (!evidence.length) return "";
+  return `
+    <dl class="reason-evidence">
+      ${evidence.map((item) => `
+        <div class="${item.tone === "alert" ? "is-alert" : ""}">
+          <dt>${escapeHtml(item.label)}</dt>
+          <dd>${escapeHtml(formatValue(item.value))}</dd>
+        </div>
+      `).join("")}
+    </dl>
+  `;
 }
 
 function renderCoverage(rows) {
@@ -93,6 +120,32 @@ function renderBrowserSummary(state, client) {
     "Behavior score": client.behavior?.score ?? "n/a",
     "Human check": challengeStatus(state)
   });
+}
+
+function renderNetworkIdentity(report) {
+  renderKv("#networkIdentity", buildNetworkIdentitySummary(report));
+}
+
+function renderWebRtcComparison(report) {
+  renderKv("#webrtcComparison", buildWebRtcComparison(report));
+}
+
+function renderBehaviorSummary(report) {
+  renderKv("#behaviorSummary", buildBehaviorSummary(report));
+}
+
+function renderWorkerConsistency(report) {
+  const tbody = $("#workerConsistencyTable tbody");
+  tbody.innerHTML = buildWorkerConsistencyRows(report).map((row) => `
+    <tr>
+      <td>${escapeHtml(row.label)}</td>
+      <td><code>${escapeHtml(row.values.Window)}</code></td>
+      <td><code>${escapeHtml(row.values["Web Worker"])}</code></td>
+      <td><code>${escapeHtml(row.values.Iframe)}</code></td>
+      <td><code>${escapeHtml(row.values["Service Worker"])}</code></td>
+      <td><span class="status-pill status-${escapeHtml(row.status)}">${escapeHtml(row.status)}</span></td>
+    </tr>
+  `).join("");
 }
 
 export function renderRuntime(state) {

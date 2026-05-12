@@ -63,6 +63,22 @@
       <div id="scoreCard" class="score-card pending">Pending</div>
     </section>
 
+    <section class="panel">
+      <h2>Checks performed</h2>
+      <div class="table-wrap">
+        <table id="coverageTable">
+          <thead>
+            <tr>
+              <th>Check</th>
+              <th>Result</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
     <details class="panel challenge-panel toggle-panel">
       <summary>
         <span class="summary-icon" aria-hidden="true"></span>
@@ -126,7 +142,7 @@
       </div>
     </details>
 
-    <section class="grid two">
+    <section class="masonry">
       <article class="panel">
         <h2>Top signals</h2>
         <div id="reasons" class="list muted">No report yet.</div>
@@ -135,25 +151,6 @@
         <h2>Runtime</h2>
         <div id="runtime" class="kv"></div>
       </article>
-    </section>
-
-    <section class="panel">
-      <h2>Checks performed</h2>
-      <div class="table-wrap">
-        <table id="coverageTable">
-          <thead>
-            <tr>
-              <th>Check</th>
-              <th>Result</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="grid two">
       <article class="panel">
         <h2>Server / IP</h2>
         <div id="serverSummary" class="kv"></div>
@@ -161,6 +158,36 @@
       <article class="panel">
         <h2>Browser</h2>
         <div id="browserSummary" class="kv"></div>
+      </article>
+      <article class="panel">
+        <h2>Network identity</h2>
+        <div id="networkIdentity" class="kv"></div>
+      </article>
+      <article class="panel">
+        <h2>WebRTC comparison</h2>
+        <div id="webrtcComparison" class="kv"></div>
+      </article>
+      <article class="panel">
+        <h2>Worker consistency</h2>
+        <div class="table-wrap">
+          <table id="workerConsistencyTable" class="compact-table">
+            <thead>
+              <tr>
+                <th>Signal</th>
+                <th>Window</th>
+                <th>Web Worker</th>
+                <th>Iframe</th>
+                <th>Service Worker</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </article>
+      <article class="panel">
+        <h2>Behaviour detail</h2>
+        <div id="behaviorSummary" class="kv"></div>
       </article>
     </section>
 

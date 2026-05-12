@@ -144,6 +144,15 @@ export function formatValue(value) {
   return JSON.stringify(value);
 }
 
+export function formatList(values, empty = "none") {
+  return Array.isArray(values) && values.length ? values.join(", ") : empty;
+}
+
+export function formatMs(value) {
+  if (value == null || value === "") return "n/a";
+  return Number.isFinite(Number(value)) ? `${Math.round(Number(value))} ms` : "n/a";
+}
+
 export function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

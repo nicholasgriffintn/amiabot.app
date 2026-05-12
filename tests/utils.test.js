@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   escapeHtml,
+  formatList,
+  formatMs,
   formatValue,
   guessPlatformOs,
   guessUaOs,
@@ -48,6 +50,15 @@ describe("formatting and platform helpers", () => {
     expect(formatValue(null)).toBe("n/a");
     expect(formatValue(true)).toBe("true");
     expect(formatValue({ ok: true })).toBe('{"ok":true}');
+  });
+
+  it("formats list and millisecond display values", () => {
+    expect(formatList(["a", "b"])).toBe("a, b");
+    expect(formatList([])).toBe("none");
+    expect(formatMs(26.4)).toBe("26 ms");
+    expect(formatMs("50")).toBe("50 ms");
+    expect(formatMs(null)).toBe("n/a");
+    expect(formatMs("nope")).toBe("n/a");
   });
 
   it("guesses OS families from user agent and platform strings", () => {
