@@ -1,3 +1,5 @@
+import { collectProxyHeaders, getSuspiciousProxyHeaders } from "./proxy-headers.js";
+
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
   "Access-Control-Allow-Origin": "*",
@@ -13,22 +15,6 @@ const SENSITIVE_HEADERS = new Set([
   "api-key",
   "apikey"
 ]);
-
-const PROXY_HEADER_NAMES = [
-  "forwarded",
-  "forwarded-for",
-  "via",
-  "proxy-connection",
-  "x-forwarded-for",
-  "x-forwarded-host",
-  "x-forwarded-proto",
-  "x-real-ip",
-  "x-client-ip",
-  "true-client-ip",
-  "client-ip",
-  "proxy-authenticate",
-  "proxy-authorization"
-];
 
 const DATACENTER_ORG_PATTERNS = [
   /amazon|aws|ec2/i,
@@ -124,7 +110,7 @@ function collectServerBasics(request) {
   const cf = collectCf(request.cf || {});
   const ip = getClientIp(request.headers);
   const ua = request.headers.get("user-agent") || "";
-  const proxyHeaders = findProxyHeaders(request.headers);
+  const proxyHeaders = collectProxyHeaders(request.headers, SENSITIVE_HEADERS);
 
   return {
     ip,
@@ -227,15 +213,6 @@ function redactUrl(rawUrl) {
     if (/token|key|secret|pass|auth/i.test(key)) url.searchParams.set(key, "[redacted]");
   }
   return url.toString();
-}
-
-function findProxyHeaders(headers) {
-  const found = {};
-  for (const name of PROXY_HEADER_NAMES) {
-    const value = headers.get(name);
-    if (value) found[name] = SENSITIVE_HEADERS.has(name) ? "[redacted]" : value;
-  }
-  return found;
 }
 
 function analyzeHeaders(headers, ua) {
@@ -474,8 +451,9 @@ function scoreReport(report) {
     penalize(points, reason.id, reason.severity, reason.message);
   }
 
-  if (Object.keys(server.proxyHeaders || {}).length) {
-    penalize(20, "proxy_headers", "medium", "Request includes explicit proxy forwarding headers.", server.proxyHeaders);
+  const suspiciousProxyHeaders = getSuspiciousProxyHeaders(server.proxyHeaders);
+  if (Object.keys(suspiciousProxyHeaders).length) {
+    penalize(20, "proxy_headers", "medium", "Request includes explicit proxy forwarding headers beyond Cloudflare's normal Worker forwarding context.", suspiciousProxyHeaders);
   }
 
   if (server.datacenterHeuristic?.isLikelyDatacenter) {

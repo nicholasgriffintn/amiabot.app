@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "check": "node --check src/worker.js && for file in public/*.js; do node --check \"$file\"; done",
+    "check": "for file in src/*.js public/*.js; do node --check \"$file\"; done",
     "test": "vitest run"
   },
   "devDependencies": {
