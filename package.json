@@ -7,9 +7,11 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "check": "node --check src/worker.js && node --check public/app.js && node --check public/sw-detector.js"
+    "check": "node --check src/worker.js && for file in public/*.js; do node --check \"$file\"; done",
+    "test": "vitest run"
   },
   "devDependencies": {
+    "vitest": "^4.0.14",
     "wrangler": "^4.90.0"
   }
 }

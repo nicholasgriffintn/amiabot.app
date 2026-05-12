@@ -1,0 +1,154 @@
+export function parseIceCandidate(candidate) {
+  const parts = candidate.trim().split(/\s+/);
+  if (parts.length < 8) return null;
+  const address = parts[4];
+  const port = parts[5];
+  const typeIndex = parts.indexOf("typ");
+  const type = typeIndex >= 0 ? parts[typeIndex + 1] : null;
+  return {
+    foundation: parts[0].replace(/^candidate:/, ""),
+    component: parts[1],
+    protocol: parts[2],
+    priority: parts[3],
+    address,
+    port,
+    type,
+    isMdns: /\.local$/i.test(address),
+    isPrivate: isPrivateIp(address),
+    isPublic: isPublicIp(address),
+    raw: candidate
+  };
+}
+
+export function isPrivateIp(address) {
+  if (!address || /\.local$/i.test(address)) return false;
+  if (address.includes(":")) {
+    const lower = address.toLowerCase();
+    return lower === "::1" || lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80");
+  }
+  const parts = address.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+  return parts[0] === 10 ||
+    parts[0] === 127 ||
+    (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+    (parts[0] === 192 && parts[1] === 168) ||
+    (parts[0] === 169 && parts[1] === 254);
+}
+
+export function isPublicIp(address) {
+  if (!address || /\.local$/i.test(address)) return false;
+  if (address.includes(":")) return !isPrivateIp(address);
+  return /^\d{1,3}(\.\d{1,3}){3}$/.test(address) && !isPrivateIp(address);
+}
+
+export function guessUaOs(ua) {
+  if (/Windows NT/i.test(ua)) return "windows";
+  if (/Android/i.test(ua)) return "android";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Mac OS X|Macintosh/i.test(ua)) return "macos";
+  if (/Linux/i.test(ua)) return "linux";
+  if (/CrOS/i.test(ua)) return "chromeos";
+  return null;
+}
+
+export function guessPlatformOs(platform) {
+  if (!platform) return null;
+  if (/Win/i.test(platform)) return "windows";
+  if (/iPhone|iPad|iPod/i.test(platform)) return "ios";
+  if (/Mac/i.test(platform)) return "macos";
+  if (/Android/i.test(platform)) return "android";
+  if (/Linux|X11/i.test(platform)) return "linux";
+  return null;
+}
+
+export function simplifyPerformanceEntry(entry) {
+  const out = {};
+  for (const key of ["type", "redirectCount", "domContentLoadedEventEnd", "loadEventEnd", "duration", "transferSize", "encodedBodySize", "decodedBodySize"]) {
+    if (entry[key] !== undefined) out[key] = typeof entry[key] === "number" ? Math.round(entry[key] * 10) / 10 : entry[key];
+  }
+  return out;
+}
+
+export function standardDeviation(values) {
+  const nums = values.filter((value) => Number.isFinite(value));
+  if (nums.length < 2) return 0;
+  const mean = nums.reduce((acc, value) => acc + value, 0) / nums.length;
+  const variance = nums.reduce((acc, value) => acc + (value - mean) ** 2, 0) / nums.length;
+  return Math.sqrt(variance);
+}
+
+export function unique(values) {
+  return [...new Set(values.filter(Boolean))];
+}
+
+export function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function promiseWithTimeout(promise, ms, label) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(label || "Timeout")), ms);
+    promise.then((value) => {
+      clearTimeout(timer);
+      resolve(value);
+    }, (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+  });
+}
+
+export async function safeAsync(fn) {
+  try {
+    const value = await fn();
+    return value === undefined ? null : value;
+  } catch (error) {
+    return { error: String(error && error.message ? error.message : error) };
+  }
+}
+
+export function safe(fn) {
+  try {
+    const value = fn();
+    return value === undefined ? null : value;
+  } catch (error) {
+    return { error: String(error && error.message ? error.message : error) };
+  }
+}
+
+export async function sha256(text) {
+  try {
+    const data = new TextEncoder().encode(text);
+    const digest = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  } catch (_) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+    return `fallback-${Math.abs(hash)}`;
+  }
+}
+
+export function copyPlain(value) {
+  if (!value || typeof value !== "object") return value;
+  return JSON.parse(JSON.stringify(value, (_, v) => typeof v === "bigint" ? v.toString() : v));
+}
+
+export function bool(value) {
+  return value === true ? "true" : value === false ? "false" : value == null ? "n/a" : String(value);
+}
+
+export function formatValue(value) {
+  if (value == null) return "n/a";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return JSON.stringify(value);
+}
+
+export function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
