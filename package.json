@@ -1,0 +1,15 @@
+{
+  "name": "amiabot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "check": "node --check src/worker.js && node --check public/app.js && node --check public/sw-detector.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.90.0"
+  }
+}
