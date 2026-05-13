@@ -56,12 +56,14 @@ export function buildWebRtcComparison(report) {
   const webrtc = report?.client?.network?.webrtc || {};
   const candidates = Array.isArray(webrtc.candidates) ? webrtc.candidates : [];
   const different = webrtc.differentPublicIps || [];
+  const additional = webrtc.additionalPublicIps || [];
   const serverIp = webrtc.serverIp || report?.server?.ip || null;
 
   return {
-    Status: webrtc.supported === false ? "not supported" : different.length ? "mismatch detected" : candidates.length ? "matched request IP" : "no candidates",
+    Status: webrtc.supported === false ? "not supported" : different.length ? "mismatch detected" : webrtc.publicIpMatchedServer ? "matched request IP" : candidates.length ? "no matching public IP" : "no candidates",
     "HTTP request IP": serverIp || "n/a",
     "WebRTC public IPs": formatList(webrtc.publicIps),
+    "Additional public IPs": formatList(additional),
     "Different public IPs": formatList(different),
     "Private IPs": formatList(webrtc.privateIps),
     "mDNS hosts": webrtc.mdnsHosts?.length || 0,

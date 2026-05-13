@@ -151,6 +151,34 @@ describe("report view model", () => {
     });
   });
 
+  it("treats dual-stack WebRTC candidates as matched when the request IP is present", () => {
+    const comparison = buildWebRtcComparison({
+      server: { ip: "2a02:6b6f:eaf2:2500:d00b:9088:ad14:281a" },
+      client: {
+        network: {
+          webrtc: {
+            supported: true,
+            serverIp: "2a02:6b6f:eaf2:2500:d00b:9088:ad14:281a",
+            publicIpMatchedServer: true,
+            publicIps: ["45.159.90.144", "2a02:6b6f:eaf2:2500:d00b:9088:ad14:281a"],
+            additionalPublicIps: ["45.159.90.144"],
+            differentPublicIps: [],
+            candidates: [
+              { address: "45.159.90.144", port: "54455", type: "srflx", isPublic: true },
+              { address: "2a02:6b6f:eaf2:2500:d00b:9088:ad14:281a", port: "53369", type: "srflx", isPublic: true }
+            ]
+          }
+        }
+      }
+    });
+
+    expect(comparison).toMatchObject({
+      Status: "matched request IP",
+      "Additional public IPs": "45.159.90.144",
+      "Different public IPs": "none"
+    });
+  });
+
   it("reports stale behaviour verdict samples separately from current behaviour", () => {
     expect(getBehaviorFreshness(sampleReport)).toMatchObject({ isStale: true });
     expect(buildBehaviorSummary(sampleReport)).toMatchObject({

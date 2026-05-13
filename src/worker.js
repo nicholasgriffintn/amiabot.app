@@ -434,16 +434,17 @@ function enrichClientConsistency(client, server) {
   const serverIp = server?.ip || null;
   const webrtc = client.network?.webrtc;
   if (serverIp && webrtc?.publicIps?.length) {
+    if (!client.network) client.network = {};
+    const hasServerIp = webrtc.publicIps.includes(serverIp);
     const different = webrtc.publicIps.filter((ip) => ip !== serverIp);
-    if (different.length) {
-      if (!client.network) client.network = {};
-      client.network.webrtc = {
-        ...webrtc,
-        publicIpLeakDifferentFromServer: true,
-        differentPublicIps: different,
-        serverIp
-      };
-    }
+    client.network.webrtc = {
+      ...webrtc,
+      serverIp,
+      publicIpMatchedServer: hasServerIp,
+      additionalPublicIps: hasServerIp ? different : [],
+      differentPublicIps: hasServerIp ? [] : different,
+      publicIpLeakDifferentFromServer: !hasServerIp && different.length > 0
+    };
   }
 
   return { ...client, consistency };
