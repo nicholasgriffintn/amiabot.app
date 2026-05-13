@@ -3,6 +3,7 @@ import {
   buildBehaviorSummary,
   buildNetworkIdentitySummary,
   buildReasonEvidence,
+  buildRequestConsistencyRows,
   buildWebRtcComparison,
   buildWorkerConsistencyRows
 } from "./report-view-model.js";
@@ -139,6 +140,16 @@ function renderBehaviorSummary(report) {
 }
 
 function renderWorkerConsistency(report) {
+  const requestTbody = $("#requestConsistencyTable tbody");
+  requestTbody.innerHTML = buildRequestConsistencyRows(report).map((row) => `
+    <tr>
+      <td>${escapeHtml(row.label)}</td>
+      <td><code>${escapeHtml(row.values.Request)}</code></td>
+      <td><code>${escapeHtml(row.values.Browser)}</code></td>
+      <td><span class="status-pill status-${escapeHtml(row.status)}">${escapeHtml(row.status)}</span></td>
+    </tr>
+  `).join("");
+
   const tbody = $("#workerConsistencyTable tbody");
   tbody.innerHTML = buildWorkerConsistencyRows(report).map((row) => `
     <tr>

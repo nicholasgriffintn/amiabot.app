@@ -112,6 +112,18 @@ export function buildWorkerConsistencyRows(report) {
   ];
 }
 
+export function buildRequestConsistencyRows(report) {
+  const server = report?.server || {};
+  const browser = report?.client?.browser || {};
+  const consistency = report?.client?.consistency || {};
+
+  return [
+    compareRequestBrowserValue("User-Agent", server.userAgent, browser.userAgent, consistency.userAgentMismatch),
+    compareRequestBrowserValue("Accept-Language", server.headers?.["accept-language"], formatList(browser.languages), consistency.acceptLanguageMismatch),
+    compareRequestBrowserValue("UA-CH platform", stripClientHintQuotes(server.headers?.["sec-ch-ua-platform"]), browser.userAgentData?.platform, consistency.clientHintPlatformMismatch)
+  ];
+}
+
 export function getBehaviorFreshness(report) {
   const currentElapsed = report?.client?.behavior?.summary?.elapsedMs;
   const verdictSample = findBehaviorVerdictSample(report);
@@ -201,7 +213,25 @@ function compareContextValue(label, contexts, key) {
   };
 }
 
+function compareRequestBrowserValue(label, requestValue, browserValue, mismatch) {
+  const values = {
+    Request: formatContextValue(requestValue),
+    Browser: formatContextValue(browserValue)
+  };
+  const presentValues = [values.Request, values.Browser].filter((value) => value !== "n/a");
+  return {
+    label,
+    values,
+    status: mismatch ? "differs" : presentValues.length === 2 ? "aligned" : "missing"
+  };
+}
+
 function formatContextValue(value) {
   if (value === null) return "null";
   return formatValue(value);
+}
+
+function stripClientHintQuotes(value) {
+  if (!value) return value;
+  return String(value).trim().replace(/^"|"$/g, "");
 }

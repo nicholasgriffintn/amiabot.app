@@ -3,6 +3,7 @@ import {
   buildBehaviorSummary,
   buildNetworkIdentitySummary,
   buildReasonEvidence,
+  buildRequestConsistencyRows,
   buildWebRtcComparison,
   buildWorkerConsistencyRows,
   getBehaviorFreshness
@@ -41,6 +42,11 @@ const sampleReport = {
   },
   server: {
     ip: "2001:db8::1",
+    userAgent: "Mozilla/5.0",
+    headers: {
+      "accept-language": "en-GB,en;q=0.9",
+      "sec-ch-ua-platform": "\"macOS\""
+    },
     cf: {
       asn: 64500,
       asOrganization: "Example ISP",
@@ -89,6 +95,8 @@ const sampleReport = {
     browser: {
       platform: "MacIntel",
       language: "en-GB",
+      languages: ["en-GB", "en"],
+      userAgentData: { platform: "macOS" },
       hardwareConcurrency: 2,
       deviceMemory: 8,
       webdriver: false,
@@ -192,6 +200,7 @@ describe("report view model", () => {
     const rows = buildWorkerConsistencyRows(sampleReport);
     const hardware = rows.find((row) => row.label === "Hardware threads");
 
+    expect(rows.map((row) => row.label)).not.toContain("Request User-Agent");
     expect(hardware.status).toBe("differs");
     expect(hardware.values).toMatchObject({
       Window: "2",
@@ -199,5 +208,61 @@ describe("report view model", () => {
       Iframe: "12",
       "Service Worker": "14"
     });
+  });
+
+  it("builds request-level consistency rows separately from worker context rows", () => {
+    const rows = buildRequestConsistencyRows({
+      ...sampleReport,
+      client: {
+        ...sampleReport.client,
+        consistency: {
+          userAgentMismatch: {
+            requestUserAgent: "Mozilla/5.0",
+            browserUserAgent: "Spoofed"
+          },
+          acceptLanguageMismatch: {
+            requestLanguages: ["en-gb", "en"],
+            browserLanguages: ["fr-fr", "fr"]
+          },
+          clientHintPlatformMismatch: {
+            requestPlatform: "macOS",
+            browserPlatform: "Windows"
+          }
+        },
+        browser: {
+          ...sampleReport.client.browser,
+          userAgent: "Spoofed",
+          languages: ["fr-FR", "fr"],
+          userAgentData: { platform: "Windows" }
+        }
+      }
+    });
+
+    expect(rows).toEqual([
+      {
+        label: "User-Agent",
+        values: {
+          Request: "Mozilla/5.0",
+          Browser: "Spoofed"
+        },
+        status: "differs"
+      },
+      {
+        label: "Accept-Language",
+        values: {
+          Request: "en-GB,en;q=0.9",
+          Browser: "fr-FR, fr"
+        },
+        status: "differs"
+      },
+      {
+        label: "UA-CH platform",
+        values: {
+          Request: "macOS",
+          Browser: "Windows"
+        },
+        status: "differs"
+      }
+    ]);
   });
 });
