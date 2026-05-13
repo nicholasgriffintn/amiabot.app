@@ -28,6 +28,21 @@ describe("API rate limiting", () => {
     expect(buildApiRateLimitKey(request)).toBe("GET:/api/*:203.0.113.44");
   });
 
+  it("does not trust forwarded client IP headers by default", () => {
+    const request = new Request("https://amiabot.example/api/check", {
+      headers: {
+        ...browserHeaders,
+        "cf-connecting-ip": "",
+        "x-forwarded-for": "198.51.100.20"
+      }
+    });
+
+    expect(buildApiRateLimitKey(request)).toBe("GET:/api/check:unknown-client");
+    expect(buildApiRateLimitKey(request, {
+      TRUST_FORWARDED_CLIENT_IP_HEADERS: "true"
+    })).toBe("GET:/api/check:198.51.100.20");
+  });
+
   it("checks the rate limit before serving API requests", async () => {
     const calls = [];
     const env = createWorkerEnv({

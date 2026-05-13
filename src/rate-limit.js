@@ -1,4 +1,4 @@
-import { getClientIp } from "./client-ip.js";
+import { getClientIp, shouldTrustForwardedClientIp } from "./client-ip.js";
 
 const API_RATE_LIMITER_BINDING = "API_RATE_LIMITER";
 const UNKNOWN_API_ROUTE = "/api/*";
@@ -17,7 +17,7 @@ export async function checkApiRateLimit(request, env) {
     throw new Error(`${API_RATE_LIMITER_BINDING} binding is not configured.`);
   }
 
-  const result = await limiter.limit({ key: buildApiRateLimitKey(request) });
+  const result = await limiter.limit({ key: buildApiRateLimitKey(request, env) });
   if (result.success) {
     return { allowed: true };
   }
@@ -32,9 +32,11 @@ export async function checkApiRateLimit(request, env) {
   };
 }
 
-export function buildApiRateLimitKey(request) {
+export function buildApiRateLimitKey(request, env = {}) {
   const url = new URL(request.url);
   const route = API_ROUTES.has(url.pathname) ? url.pathname : UNKNOWN_API_ROUTE;
-  const client = getClientIp(request.headers) || "unknown-client";
+  const client = getClientIp(request.headers, {
+    trustForwardedHeaders: shouldTrustForwardedClientIp(env)
+  }) || "unknown-client";
   return `${request.method}:${route}:${client}`;
 }

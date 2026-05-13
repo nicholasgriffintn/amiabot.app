@@ -1,9 +1,40 @@
 import { getSuspiciousProxyHeaders } from "./proxy-headers.js";
+import {
+  languageListsOverlap,
+  normalizeBrowserLanguages,
+  normalizePlatformLabel,
+  parseAcceptLanguage,
+  parseClientHintToken
+} from "./header-consistency.js";
 
 export function enrichClientConsistency(client, server) {
   if (!client || typeof client !== "object") return client;
 
   const consistency = { ...(client.consistency || {}) };
+  const requestUserAgent = server?.userAgent || null;
+  const browserUserAgent = client.browser?.userAgent || null;
+  if (requestUserAgent && browserUserAgent && requestUserAgent !== browserUserAgent) {
+    consistency.userAgentMismatch = { requestUserAgent, browserUserAgent };
+  }
+
+  const requestLanguages = parseAcceptLanguage(server?.headers?.["accept-language"]);
+  const browserLanguages = normalizeBrowserLanguages(client.browser?.languages);
+  if (requestLanguages.length && browserLanguages.length && !languageListsOverlap(requestLanguages, browserLanguages)) {
+    consistency.acceptLanguageMismatch = {
+      requestLanguages,
+      browserLanguages
+    };
+  }
+
+  const requestUaPlatform = parseClientHintToken(server?.headers?.["sec-ch-ua-platform"]);
+  const browserUaPlatform = client.browser?.userAgentData?.platform || null;
+  if (requestUaPlatform && browserUaPlatform && normalizePlatformLabel(requestUaPlatform) !== normalizePlatformLabel(browserUaPlatform)) {
+    consistency.clientHintPlatformMismatch = {
+      requestPlatform: requestUaPlatform,
+      browserPlatform: browserUaPlatform
+    };
+  }
+
   const browserTimezone = client.browser?.timezone || null;
   const ipTimezone = server?.ipIntel?.normalized?.timezone || server?.cf?.timezone || null;
   if (browserTimezone && ipTimezone && browserTimezone !== ipTimezone) {
@@ -111,6 +142,15 @@ export function scoreReport(report) {
   }
   if (consistency.screenViewportImpossible) {
     penalize(12, "screen_viewport_impossible", "medium", "Viewport dimensions exceed screen dimensions.", consistency.screenViewportImpossible);
+  }
+  if (consistency.userAgentMismatch) {
+    penalize(22, "request_client_ua_mismatch", "high", "Request User-Agent differs from browser-reported User-Agent.", consistency.userAgentMismatch);
+  }
+  if (consistency.acceptLanguageMismatch) {
+    penalize(12, "accept_language_mismatch", "medium", "Request Accept-Language does not align with browser languages.", consistency.acceptLanguageMismatch);
+  }
+  if (consistency.clientHintPlatformMismatch) {
+    penalize(14, "client_hint_platform_mismatch", "medium", "Request UA-CH platform differs from browser-reported UA data platform.", consistency.clientHintPlatformMismatch);
   }
 
   if (browser.permissions?.notifications?.state === "default" && browser.permissions?.notifications?.permission === "default") {

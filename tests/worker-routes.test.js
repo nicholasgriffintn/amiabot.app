@@ -17,7 +17,23 @@ describe("Worker API routes", () => {
     }), createWorkerEnv(), {});
 
     expect(response.status).toBe(204);
-    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET,POST,OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST,OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
+  });
+
+  it("allows report CORS only for the same origin", async () => {
+    const sameOrigin = await worker.fetch(new Request("https://amiabot.example/api/report", {
+      method: "OPTIONS",
+      headers: { origin: "https://amiabot.example" }
+    }), createWorkerEnv(), {});
+    const foreignOrigin = await worker.fetch(new Request("https://amiabot.example/api/report", {
+      method: "OPTIONS",
+      headers: { origin: "https://collector.example" }
+    }), createWorkerEnv(), {});
+
+    expect(sameOrigin.headers.get("Access-Control-Allow-Origin")).toBe("https://amiabot.example");
+    expect(sameOrigin.headers.get("Vary")).toBe("Origin");
+    expect(foreignOrigin.headers.get("Access-Control-Allow-Origin")).toBeNull();
   });
 
   it("serves ping diagnostics from collected request basics", async () => {
@@ -51,7 +67,7 @@ describe("Worker API routes", () => {
     expect(body.server.ipIntel).toMatchObject({ provider: "none", enabled: false });
   });
 
-  it("rejects malformed report JSON through the shared error response", async () => {
+  it("rejects malformed report JSON as bad input", async () => {
     const response = await worker.fetch(new Request("https://amiabot.example/api/report", {
       method: "POST",
       headers: { ...browserHeaders, "content-type": "application/json" },
@@ -59,8 +75,31 @@ describe("Worker API routes", () => {
     }), createWorkerEnv(), {});
     const body = await response.json();
 
-    expect(response.status).toBe(500);
+    expect(response.status).toBe(400);
     expect(body).toEqual({ ok: false, error: "Invalid JSON body" });
+  });
+
+  it("rejects oversized reports before scoring", async () => {
+    const response = await worker.fetch(new Request("https://amiabot.example/api/report", {
+      method: "POST",
+      headers: { ...browserHeaders, "content-type": "application/json" },
+      body: JSON.stringify({ padding: "x".repeat(192 * 1024) })
+    }), createWorkerEnv(), {});
+    const body = await response.json();
+
+    expect(response.status).toBe(413);
+    expect(body).toEqual({ ok: false, error: "Request body too large. Max 196608 bytes." });
+  });
+
+  it("adds same-origin CORS headers to report responses", async () => {
+    const response = await worker.fetch(new Request("https://amiabot.example/api/report", {
+      method: "POST",
+      headers: { ...browserHeaders, "content-type": "application/json", origin: "https://amiabot.example" },
+      body: "{}"
+    }), createWorkerEnv(), {});
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("https://amiabot.example");
   });
 
   it("returns a JSON 404 for unknown API routes", async () => {

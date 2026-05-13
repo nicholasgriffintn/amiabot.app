@@ -1,15 +1,18 @@
-import { json, JSON_HEADERS, readJsonBody } from "./http.js";
+import { HttpError, json, JSON_HEADERS, readJsonBody, reportCorsHeaders } from "./http.js";
 import { API_RATE_LIMIT_RETRY_AFTER_SECONDS, checkApiRateLimit } from "./rate-limit.js";
 import { collectServer, collectServerBasics } from "./server-signals.js";
 import { detectionMatrix, enrichClientConsistency, scoreReport } from "./report-verdict.js";
 
 export default {
   async fetch(request, env, ctx) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: JSON_HEADERS });
-    }
-
     const url = new URL(request.url);
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: url.pathname === "/api/report" ? reportCorsHeaders(request) : JSON_HEADERS
+      });
+    }
 
     try {
       if (url.pathname.startsWith("/api/")) {
@@ -22,7 +25,7 @@ export default {
       }
 
       if (url.pathname === "/api/ping") {
-        const server = collectServerBasics(request);
+        const server = collectServerBasics(request, env);
         return json({ ok: true, now: Date.now(), iso: new Date().toISOString(), server });
       }
 
@@ -45,7 +48,7 @@ export default {
           server,
           client,
           detections
-        });
+        }, 200, {}, reportCorsHeaders(request));
       }
 
       if (url.pathname.startsWith("/api/")) {
@@ -54,7 +57,9 @@ export default {
 
       return env.ASSETS.fetch(request);
     } catch (error) {
-      return json({ ok: false, error: String(error?.message || error) }, 500);
+      const status = error instanceof HttpError ? error.status : 500;
+      const headers = url.pathname === "/api/report" ? reportCorsHeaders(request) : JSON_HEADERS;
+      return json({ ok: false, error: String(error?.message || error) }, status, {}, headers);
     }
   }
 };

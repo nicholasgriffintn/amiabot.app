@@ -1,4 +1,4 @@
-import { getClientIp } from "./client-ip.js";
+import { getClientIp, shouldTrustForwardedClientIp } from "./client-ip.js";
 import { lookupIpIntel } from "./ip-intelligence.js";
 import { isJsonSafeValue } from "./json-safe.js";
 import { collectProxyHeaders } from "./proxy-headers.js";
@@ -31,10 +31,12 @@ const DATACENTER_ORG_PATTERNS = [
   /cogent|g-core|fastly/i
 ];
 
-export function collectServerBasics(request) {
+export function collectServerBasics(request, env = {}) {
   const headers = collectHeaders(request.headers);
   const cf = collectCf(request.cf || {});
-  const ip = getClientIp(request.headers);
+  const ip = getClientIp(request.headers, {
+    trustForwardedHeaders: shouldTrustForwardedClientIp(env)
+  });
   const ua = request.headers.get("user-agent") || "";
   const proxyHeaders = collectProxyHeaders(request.headers, SENSITIVE_HEADERS);
   const url = new URL(request.url);
@@ -53,7 +55,7 @@ export function collectServerBasics(request) {
 }
 
 export async function collectServer(request, env) {
-  const basics = collectServerBasics(request);
+  const basics = collectServerBasics(request, env);
   const ip = basics.ip;
   const ua = basics.userAgent;
   const provider = String(env.IP_INTEL_PROVIDER || "ipapi").toLowerCase();
