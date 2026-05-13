@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import worker from "../src/worker.js";
+import { createWorkerEnv } from "./worker-env.js";
 
 const browserHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -32,7 +33,7 @@ describe("Worker WebRTC verdicts", () => {
       supported: true,
       publicIps: ["45.159.90.144", "2a02:6b6f:eaf2:2500:d00b:9088:ad14:281a"],
       candidates: []
-    }), { IP_INTEL_PROVIDER: "none" }, {});
+    }), createWorkerEnv(), {});
     const data = await response.json();
 
     expect(data.client.network.webrtc).toMatchObject({
@@ -49,7 +50,7 @@ describe("Worker WebRTC verdicts", () => {
       supported: true,
       publicIps: ["45.159.90.144"],
       candidates: []
-    }), { IP_INTEL_PROVIDER: "none" }, {});
+    }), createWorkerEnv(), {});
     const data = await response.json();
 
     expect(data.client.network.webrtc).toMatchObject({

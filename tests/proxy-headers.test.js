@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { collectProxyHeaders, getSuspiciousProxyHeaders } from "../src/proxy-headers.js";
 import worker from "../src/worker.js";
+import { createWorkerEnv } from "./worker-env.js";
 
 const browserHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -56,7 +57,7 @@ describe("Worker proxy header verdicts", () => {
       }
     });
 
-    const response = await worker.fetch(request, { IP_INTEL_PROVIDER: "none" }, {});
+    const response = await worker.fetch(request, createWorkerEnv(), {});
     const data = await response.json();
 
     expect(data.server.proxyHeaders).toMatchObject({
@@ -76,7 +77,7 @@ describe("Worker proxy header verdicts", () => {
       }
     });
 
-    const response = await worker.fetch(request, { IP_INTEL_PROVIDER: "none" }, {});
+    const response = await worker.fetch(request, createWorkerEnv(), {});
     const data = await response.json();
     const proxyReason = data.verdict.reasons.find((reason) => reason.id === "proxy_headers");
 

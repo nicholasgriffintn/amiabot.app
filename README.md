@@ -56,6 +56,8 @@ Server-only quick check that is useful for node only environments:
 curl https://amiabot.app/api/check
 ```
 
+NOTE: API routes are rate limited at the Worker edge by route and Cloudflare client IP. The default limit is 30 calls per minute.
+
 ## Local development
 
 ```bash

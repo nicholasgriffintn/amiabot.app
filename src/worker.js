@@ -1,4 +1,6 @@
+import { getClientIp } from "./client-ip.js";
 import { collectProxyHeaders, getSuspiciousProxyHeaders } from "./proxy-headers.js";
+import { API_RATE_LIMIT_RETRY_AFTER_SECONDS, checkApiRateLimit } from "./rate-limit.js";
 
 const JSON_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
@@ -50,6 +52,15 @@ export default {
     const url = new URL(request.url);
 
     try {
+      if (url.pathname.startsWith("/api/")) {
+        const rateLimit = await checkApiRateLimit(request, env);
+        if (!rateLimit.allowed) {
+          return json(rateLimit.responseBody, 429, {
+            "Retry-After": String(API_RATE_LIMIT_RETRY_AFTER_SECONDS)
+          });
+        }
+      }
+
       if (url.pathname === "/api/ping") {
         const server = collectServerBasics(request);
         return json({ ok: true, now: Date.now(), iso: new Date().toISOString(), server });
@@ -101,8 +112,11 @@ async function readJsonBody(request, maxBytes) {
   }
 }
 
-function json(value, status = 200) {
-  return new Response(JSON.stringify(value, null, 2), { status, headers: JSON_HEADERS });
+function json(value, status = 200, headers = {}) {
+  return new Response(JSON.stringify(value, null, 2), {
+    status,
+    headers: { ...JSON_HEADERS, ...headers }
+  });
 }
 
 function collectServerBasics(request) {
@@ -192,21 +206,6 @@ function collectCf(cfRaw) {
 function isJsonSafe(value) {
   const type = typeof value;
   return value == null || type === "string" || type === "number" || type === "boolean" || Array.isArray(value) || type === "object";
-}
-
-function getClientIp(headers) {
-  return (
-    headers.get("cf-connecting-ip") ||
-    headers.get("true-client-ip") ||
-    splitFirst(headers.get("x-forwarded-for")) ||
-    headers.get("x-real-ip") ||
-    ""
-  );
-}
-
-function splitFirst(value) {
-  if (!value) return "";
-  return value.split(",")[0].trim();
 }
 
 function redactUrl(rawUrl) {

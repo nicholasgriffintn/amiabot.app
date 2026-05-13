@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildPerformanceMemorySurface, collectPerformanceMemorySnapshot } from "../public/performance-memory.js";
 import worker from "../src/worker.js";
+import { createWorkerEnv } from "./worker-env.js";
 
 const browserHeaders = {
   accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -39,7 +40,7 @@ describe("Worker performance memory verdicts", () => {
       headers: browserHeaders
     });
 
-    const response = await worker.fetch(request, { IP_INTEL_PROVIDER: "none" }, {});
+    const response = await worker.fetch(request, createWorkerEnv(), {});
     const data = await response.json();
 
     expect(data.server.performanceMemory).toEqual({
@@ -72,7 +73,7 @@ describe("Worker performance memory verdicts", () => {
       })
     });
 
-    const response = await worker.fetch(request, { IP_INTEL_PROVIDER: "none" }, {});
+    const response = await worker.fetch(request, createWorkerEnv(), {});
     const data = await response.json();
     const memoryReason = data.verdict.reasons.find((reason) => reason.id === "performance_memory_anomaly");
 

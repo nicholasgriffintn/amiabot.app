@@ -12,6 +12,16 @@
     "binding": "ASSETS",
     "directory": "./public"
   },
+  "ratelimits": [
+    {
+      "name": "API_RATE_LIMITER",
+      "namespace_id": "1001001",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
+    }
+  ],
   "vars": {
     "IP_INTEL_PROVIDER": "ipapi"
   },
