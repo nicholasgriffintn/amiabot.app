@@ -24,6 +24,12 @@ describe("network utility helpers", () => {
     expect(isPublicIp("8.8.8.8")).toBe(true);
     expect(isPublicIp("192.168.1.10")).toBe(false);
     expect(isPublicIp("candidate.local")).toBe(false);
+    expect(isPublicIp("100.64.0.1")).toBe(false);
+    expect(isPublicIp("203.0.113.7")).toBe(false);
+    expect(isPublicIp("224.0.0.1")).toBe(false);
+    expect(isPublicIp("2001:db8::1")).toBe(false);
+    expect(isPublicIp("ff02::1")).toBe(false);
+    expect(isPublicIp("2001:4860:4860::8888")).toBe(true);
   });
 
   it("parses ICE candidates into structured address signals", () => {

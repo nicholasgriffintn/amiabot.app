@@ -24,12 +24,18 @@ export function isPrivateIp(address) {
   if (!address || /\.local$/i.test(address)) return false;
   if (address.includes(":")) {
     const lower = address.toLowerCase();
-    return lower === "::1" || lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80");
+    return lower === "::" ||
+      lower === "::1" ||
+      lower.startsWith("fc") ||
+      lower.startsWith("fd") ||
+      isIpv6LinkLocal(lower);
   }
   const parts = address.split(".").map(Number);
   if (parts.length !== 4 || parts.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return false;
   return parts[0] === 10 ||
+    parts[0] === 0 ||
     parts[0] === 127 ||
+    (parts[0] === 100 && parts[1] >= 64 && parts[1] <= 127) ||
     (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
     (parts[0] === 192 && parts[1] === 168) ||
     (parts[0] === 169 && parts[1] === 254);
@@ -37,8 +43,50 @@ export function isPrivateIp(address) {
 
 export function isPublicIp(address) {
   if (!address || /\.local$/i.test(address)) return false;
-  if (address.includes(":")) return !isPrivateIp(address);
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(address) && !isPrivateIp(address);
+  if (address.includes(":")) return isGlobalIpv6(address);
+  const parts = parseIpv4(address);
+  return Boolean(parts) && !isPrivateIp(address) && !isSpecialUseIpv4(parts);
+}
+
+function parseIpv4(address) {
+  if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(address)) return null;
+  const parts = address.split(".").map(Number);
+  return parts.every((n) => Number.isInteger(n) && n >= 0 && n <= 255) ? parts : null;
+}
+
+function isSpecialUseIpv4(parts) {
+  const [a, b, c] = parts;
+  return (a === 192 && b === 0 && c === 0) ||
+    (a === 192 && b === 0 && c === 2) ||
+    (a === 192 && b === 88 && c === 99) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 198 && b === 51 && c === 100) ||
+    (a === 203 && b === 0 && c === 113) ||
+    a >= 224;
+}
+
+function isGlobalIpv6(address) {
+  const lower = address.toLowerCase();
+  if (isPrivateIp(lower)) return false;
+  const first = firstIpv6Hextet(lower);
+  if (first == null) return false;
+  return first < 0xff00 &&
+    !lower.startsWith("2001:db8:") &&
+    lower !== "2001:db8::" &&
+    !lower.startsWith("2002:") &&
+    !lower.startsWith("64:ff9b:");
+}
+
+function isIpv6LinkLocal(address) {
+  const first = firstIpv6Hextet(address);
+  return first != null && first >= 0xfe80 && first <= 0xfebf;
+}
+
+function firstIpv6Hextet(address) {
+  const stripped = address.replace(/^\[|\]$/g, "");
+  const first = stripped.startsWith("::") ? "0" : stripped.split(":")[0];
+  if (!/^[0-9a-f]{0,4}$/i.test(first)) return null;
+  return parseInt(first || "0", 16);
 }
 
 export function guessUaOs(ua) {

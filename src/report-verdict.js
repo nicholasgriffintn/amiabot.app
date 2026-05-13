@@ -3,6 +3,7 @@ import {
   languageListsOverlap,
   normalizeBrowserLanguages,
   normalizePlatformLabel,
+  parseClientHintBoolean,
   parseAcceptLanguage,
   parseClientHintToken
 } from "./header-consistency.js";
@@ -32,6 +33,26 @@ export function enrichClientConsistency(client, server) {
     consistency.clientHintPlatformMismatch = {
       requestPlatform: requestUaPlatform,
       browserPlatform: browserUaPlatform
+    };
+  }
+
+  const requestUaMobile = parseClientHintBoolean(server?.headers?.["sec-ch-ua-mobile"]);
+  const browserUaMobile = client.browser?.userAgentData?.mobile;
+  if (requestUaMobile != null && typeof browserUaMobile === "boolean" && requestUaMobile !== browserUaMobile) {
+    consistency.clientHintMobileMismatch = {
+      requestMobile: requestUaMobile,
+      browserMobile: browserUaMobile
+    };
+  }
+
+  const uaLooksMobile = /android|iphone|ipad|ipod|mobile/i.test(browserUserAgent || requestUserAgent || "");
+  const touchPoints = Number(client.browser?.maxTouchPoints);
+  const touchEventPresent = client.browser?.features?.touchEvent;
+  if (uaLooksMobile && Number.isFinite(touchPoints) && touchPoints === 0 && touchEventPresent === false) {
+    consistency.mobileTouchMismatch = {
+      userAgent: browserUserAgent || requestUserAgent,
+      maxTouchPoints: touchPoints,
+      touchEvent: touchEventPresent
     };
   }
 
@@ -103,6 +124,7 @@ export function scoreReport(report) {
     if (ipIntel.isVpn) penalize(30, "ip_vpn", "high", "IP intelligence says IP is VPN traffic.", ipIntel);
     if (ipIntel.isDatacenter) penalize(18, "ip_datacenter", "medium", "IP intelligence says IP belongs to hosting/datacenter space.", ipIntel);
     if (ipIntel.isAbuser) penalize(15, "ip_abuser", "medium", "IP intelligence marks IP as abusive or high-risk.", ipIntel);
+    if (ipIntel.isCrawler) penalize(35, "ip_crawler", "high", "IP intelligence says IP belongs to crawler traffic.", ipIntel);
     if (typeof ipIntel.fraudScore === "number" && ipIntel.fraudScore >= 85) {
       penalize(20, "ipqs_high_fraud_score", "high", "IPQS fraud score is high.", ipIntel);
     }
@@ -114,6 +136,9 @@ export function scoreReport(report) {
       penalize(30, "managed_bot_score_low", "high", "Managed bot score is below 30.", cfBot);
     } else if (typeof cfBot.score === "number" && cfBot.score < 50 && !cfBot.verifiedBot) {
       penalize(12, "managed_bot_score_borderline", "medium", "Managed bot score is below 50.", cfBot);
+    }
+    if (cfBot.verifiedBot === true) {
+      penalize(35, "cloudflare_verified_bot", "high", "Cloudflare identifies this request as verified bot traffic.", cfBot);
     }
   }
 
@@ -152,6 +177,12 @@ export function scoreReport(report) {
   if (consistency.clientHintPlatformMismatch) {
     penalize(14, "client_hint_platform_mismatch", "medium", "Request UA-CH platform differs from browser-reported UA data platform.", consistency.clientHintPlatformMismatch);
   }
+  if (consistency.clientHintMobileMismatch) {
+    penalize(12, "client_hint_mobile_mismatch", "medium", "Request UA-CH mobile hint differs from browser-reported UA data mobile flag.", consistency.clientHintMobileMismatch);
+  }
+  if (consistency.mobileTouchMismatch) {
+    penalize(12, "mobile_touch_mismatch", "medium", "Mobile User-Agent has no matching touch capability surface.", consistency.mobileTouchMismatch);
+  }
 
   if (browser.permissions?.notifications?.state === "default" && browser.permissions?.notifications?.permission === "default") {
     penalize(8, "notification_permission_default_state", "low", "Notification permission state is 'default'; stealth tooling has historically produced this mismatch.");
@@ -172,8 +203,9 @@ export function scoreReport(report) {
   if (fingerprints.webgl?.supported === false) {
     penalize(10, "webgl_missing", "medium", "WebGL unavailable.");
   }
-  if (fingerprints.canvas?.hash && fingerprints.canvas.hashError) {
-    penalize(8, "canvas_error", "low", "Canvas fingerprint failed or was blocked.", fingerprints.canvas.hashError);
+  const canvasError = fingerprints.canvas?.hashError || fingerprints.canvas?.error;
+  if (canvasError) {
+    penalize(8, "canvas_error", "low", "Canvas fingerprint failed or was blocked.", canvasError);
   }
 
   if (network.webrtc?.publicIpLeakDifferentFromServer === true) {

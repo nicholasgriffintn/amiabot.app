@@ -45,7 +45,8 @@ const sampleReport = {
     userAgent: "Mozilla/5.0",
     headers: {
       "accept-language": "en-GB,en;q=0.9",
-      "sec-ch-ua-platform": "\"macOS\""
+      "sec-ch-ua-platform": "\"macOS\"",
+      "sec-ch-ua-mobile": "?0"
     },
     cf: {
       asn: 64500,
@@ -96,7 +97,7 @@ const sampleReport = {
       platform: "MacIntel",
       language: "en-GB",
       languages: ["en-GB", "en"],
-      userAgentData: { platform: "macOS" },
+      userAgentData: { platform: "macOS", mobile: false },
       hardwareConcurrency: 2,
       deviceMemory: 8,
       webdriver: false,
@@ -227,13 +228,17 @@ describe("report view model", () => {
           clientHintPlatformMismatch: {
             requestPlatform: "macOS",
             browserPlatform: "Windows"
+          },
+          clientHintMobileMismatch: {
+            requestMobile: false,
+            browserMobile: true
           }
         },
         browser: {
           ...sampleReport.client.browser,
           userAgent: "Spoofed",
           languages: ["fr-FR", "fr"],
-          userAgentData: { platform: "Windows" }
+          userAgentData: { platform: "Windows", mobile: true }
         }
       }
     });
@@ -260,6 +265,14 @@ describe("report view model", () => {
         values: {
           Request: "macOS",
           Browser: "Windows"
+        },
+        status: "differs"
+      },
+      {
+        label: "UA-CH mobile",
+        values: {
+          Request: "?0",
+          Browser: "?1"
         },
         status: "differs"
       }

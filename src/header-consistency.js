@@ -27,6 +27,13 @@ export function parseClientHintToken(value) {
   return String(value).trim().replace(/^"|"$/g, "") || null;
 }
 
+export function parseClientHintBoolean(value) {
+  const token = parseClientHintToken(value);
+  if (token === "?1") return true;
+  if (token === "?0") return false;
+  return null;
+}
+
 export function normalizePlatformLabel(value) {
   return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
 }

@@ -120,7 +120,8 @@ export function buildRequestConsistencyRows(report) {
   return [
     compareRequestBrowserValue("User-Agent", server.userAgent, browser.userAgent, consistency.userAgentMismatch),
     compareRequestBrowserValue("Accept-Language", server.headers?.["accept-language"], formatList(browser.languages), consistency.acceptLanguageMismatch),
-    compareRequestBrowserValue("UA-CH platform", stripClientHintQuotes(server.headers?.["sec-ch-ua-platform"]), browser.userAgentData?.platform, consistency.clientHintPlatformMismatch)
+    compareRequestBrowserValue("UA-CH platform", stripClientHintQuotes(server.headers?.["sec-ch-ua-platform"]), browser.userAgentData?.platform, consistency.clientHintPlatformMismatch),
+    compareRequestBrowserValue("UA-CH mobile", stripClientHintQuotes(server.headers?.["sec-ch-ua-mobile"]), formatClientHintMobile(browser.userAgentData?.mobile), consistency.clientHintMobileMismatch)
   ];
 }
 
@@ -234,4 +235,9 @@ function formatContextValue(value) {
 function stripClientHintQuotes(value) {
   if (!value) return value;
   return String(value).trim().replace(/^"|"$/g, "");
+}
+
+function formatClientHintMobile(value) {
+  if (typeof value !== "boolean") return value;
+  return value ? "?1" : "?0";
 }

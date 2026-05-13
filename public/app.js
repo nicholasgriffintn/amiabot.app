@@ -3,14 +3,13 @@ import { setupButtons } from "./controls.js";
 import { runChecks } from "./report.js";
 import {
   BEHAVIOR_CHECKPOINTS_MS,
-  computeBehavior,
   setupEventCapture,
   setupPerformanceProbe,
   setupRafProbe,
   setupSensorProbe
 } from "./runtime.js";
 import { state } from "./state.js";
-import { renderReport, renderRuntime, setStatus, updateHeroReadout } from "./ui.js";
+import { renderRuntime, setStatus, updateHeroReadout } from "./ui.js";
 import { renderPerformanceMemorySurface } from "./surface-ui.js";
 
 boot();
@@ -29,10 +28,6 @@ function boot() {
   BEHAVIOR_CHECKPOINTS_MS.forEach((delay) => {
     setTimeout(() => {
       renderRuntime(state);
-      if (state.report) {
-        state.report.client.behavior = computeBehavior(state);
-        renderReport(state, state.report, { preserveJson: true });
-      }
     }, delay);
   });
 }
