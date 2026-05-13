@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   escapeHtml,
+  formatBytes,
   formatList,
   formatMs,
   formatValue,
@@ -59,6 +60,9 @@ describe("formatting and platform helpers", () => {
     expect(formatMs("50")).toBe("50 ms");
     expect(formatMs(null)).toBe("n/a");
     expect(formatMs("nope")).toBe("n/a");
+    expect(formatBytes(4 * 1024 * 1024 * 1024)).toBe("4 GB");
+    expect(formatBytes(1536)).toBe("1.5 KB");
+    expect(formatBytes(null)).toBe("n/a");
   });
 
   it("guesses OS families from user agent and platform strings", () => {

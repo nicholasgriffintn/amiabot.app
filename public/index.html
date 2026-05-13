@@ -8,6 +8,7 @@
     content="Am I a Bot? checks browser, network, and worker signals to help you understand whether a session looks automated.">
   <meta name="theme-color" content="#07090f">
   <title>Am I a Bot?</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/styles.css">
 </head>
 
@@ -159,9 +160,9 @@
         <h2>Browser</h2>
         <div id="browserSummary" class="kv"></div>
       </article>
-      <article class="panel">
-        <h2>Network identity</h2>
-        <div id="networkIdentity" class="kv"></div>
+        <article class="panel">
+        <h2>Behaviour detail</h2>
+        <div id="behaviorSummary" class="kv"></div>
       </article>
       <article class="panel">
         <h2>WebRTC comparison</h2>
@@ -185,9 +186,37 @@
           </table>
         </div>
       </article>
-      <article class="panel">
-        <h2>Behaviour detail</h2>
-        <div id="behaviorSummary" class="kv"></div>
+        <article class="panel">
+          <h2>Network identity</h2>
+          <div id="networkIdentity" class="kv"></div>
+          </article>
+          <article class="panel">
+            <h2>Surface indicators</h2>
+            <div id="surfaceSummary" class="kv"></div>
+          </article>
+          <article class="panel">
+            <h2>Media / DRM</h2>
+            <div id="mediaDrmSummary" class="surface-grid muted">No report yet.</div>
+          </article>
+          <article class="panel">
+            <h2>Performance memory</h2>
+            <div id="memoryVisual" class="visual-block muted">No report yet.</div>
+          </article>
+          <article class="panel">
+            <h2>Sensors</h2>
+            <div id="sensorVisual" class="visual-block muted">No report yet.</div>
+          </article>
+          <article class="panel">
+            <h2>Resource timing</h2>
+            <div id="resourceTimeline" class="visual-block muted">No report yet.</div>
+          </article>
+          <article class="panel">
+            <h2>Browser extensions</h2>
+            <div id="extensionProbeSummary" class="visual-block muted">No report yet.</div>
+          </article>
+          <article class="panel">
+            <h2>Voices & policies</h2>
+            <div id="voicePolicySummary" class="visual-block muted">No report yet.</div>
       </article>
     </section>
 

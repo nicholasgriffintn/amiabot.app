@@ -1,6 +1,7 @@
 import { collectAutomationSignals, collectBrowser } from "./collect-browser.js";
 import { collectFingerprints } from "./collect-fingerprints.js";
 import { collectNetwork } from "./collect-network.js";
+import { collectSurfaceIndicators } from "./collect-surfaces.js";
 import { collectWorkers } from "./collect-workers.js";
 import { $ } from "./dom.js";
 import { computeBehavior } from "./runtime.js";
@@ -17,10 +18,11 @@ export async function runChecks(state) {
     const browser = await collectBrowser();
     const automation = collectAutomationSignals();
 
-    const [workers, fingerprints, network] = await Promise.all([
+    const [workers, fingerprints, network, surfaces] = await Promise.all([
       collectWorkers(),
       collectFingerprints(),
-      collectNetwork()
+      collectNetwork(state),
+      collectSurfaceIndicators(state)
     ]);
 
     const client = {
@@ -29,6 +31,7 @@ export async function runChecks(state) {
       automation,
       workers,
       fingerprints,
+      surfaces,
       network,
       consistency: computeConsistency(browser, workers, network),
       behavior: computeBehavior(state),

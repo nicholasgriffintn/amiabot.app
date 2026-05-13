@@ -1,3 +1,4 @@
+import { collectPerformanceMemorySnapshot, buildPerformanceMemorySurface } from "./performance-memory.js";
 import { standardDeviation } from "./utils.js";
 
 export const BEHAVIOR_CHECKPOINTS_MS = [1500, 4000, 7000, 10000, 15000];
@@ -40,6 +41,46 @@ export function setupRafProbe(state) {
     requestAnimationFrame(loop);
   };
   requestAnimationFrame(loop);
+}
+
+export function setupPerformanceProbe(state, onSample = null) {
+  const record = () => {
+    const sample = collectPerformanceMemorySnapshot(performance.now() - state.startedAt);
+    if (!sample.supported) return;
+    state.performanceSamples.push(sample);
+    if (state.performanceSamples.length > 100) state.performanceSamples.shift();
+    if (onSample) onSample(buildPerformanceMemorySurface(state));
+  };
+
+  record();
+  window.setInterval(record, 500);
+}
+
+export function setupSensorProbe(state) {
+  const pushSample = (name, sample) => {
+    const bucket = state.sensorSamples[name];
+    if (!bucket) return;
+    bucket.push({ t: Math.round(performance.now() - state.startedAt), ...sample });
+    if (bucket.length > 40) bucket.shift();
+  };
+
+  window.addEventListener("deviceorientation", (event) => {
+    pushSample("orientation", {
+      alpha: roundSensorValue(event.alpha),
+      beta: roundSensorValue(event.beta),
+      gamma: roundSensorValue(event.gamma),
+      absolute: event.absolute === true
+    });
+  }, { passive: true });
+
+  window.addEventListener("devicemotion", (event) => {
+    pushSample("motion", {
+      x: roundSensorValue(event.acceleration?.x),
+      y: roundSensorValue(event.acceleration?.y),
+      z: roundSensorValue(event.acceleration?.z),
+      interval: roundSensorValue(event.interval)
+    });
+  }, { passive: true });
 }
 
 export function computeBehavior(state, now = performance.now()) {
@@ -89,4 +130,8 @@ export function computeBehavior(state, now = performance.now()) {
     },
     recentEvents: state.events.slice(-30)
   };
+}
+
+function roundSensorValue(value) {
+  return Number.isFinite(value) ? Math.round(value * 1000) / 1000 : null;
 }

@@ -4,6 +4,11 @@ export function createInitialState(clock = performance) {
     report: null,
     events: [],
     rafSamples: [],
+    performanceSamples: [],
+    sensorSamples: {
+      orientation: [],
+      motion: []
+    },
     lastPointerSampleAt: 0,
     challenge: {
       formSubmitted: false,

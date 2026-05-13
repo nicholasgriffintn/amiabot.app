@@ -27,11 +27,18 @@ Am I a Bot? is a transparent bot/proxy/VPN detection site for browser automation
 - Font metric fingerprint.
 - CSS media fingerprint.
 - WebGPU availability and adapter info when exposed.
+- Live `performance.memory` charts, FPS approximation, and Resource Timing visualisation.
+- Encrypted Media Extensions / DRM support.
+- Speech synthesis voices and Feature Policy / Permissions Policy surfaces.
+- Device sensor support and passive orientation/motion samples when exposed.
+- Media-device supported constraints.
+- Known browser extension resource probes.
 - Web Worker navigator comparison.
 - Service Worker navigator comparison.
 - Same-origin iframe navigator comparison.
 - WebRTC ICE candidate leak check.
 - Browser-to-edge latency check.
+- Heap memory snapshots sent with browser-to-edge latency pings.
 - Transparent behavior score from pointer, key, scroll, focus, RAF jitter, and challenge completion.
 - Optional interaction challenge: form submit, confirm dialog, table update task.
 

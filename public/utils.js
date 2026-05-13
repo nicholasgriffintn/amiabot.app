@@ -153,6 +153,21 @@ export function formatMs(value) {
   return Number.isFinite(Number(value)) ? `${Math.round(Number(value))} ms` : "n/a";
 }
 
+export function formatBytes(value) {
+  if (value == null || value === "") return "n/a";
+  if (!Number.isFinite(Number(value))) return "n/a";
+  const bytes = Number(value);
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024;
+    unitIndex += 1;
+  }
+  const rounded = size >= 10 || unitIndex === 0 ? Math.round(size) : Math.round(size * 10) / 10;
+  return `${rounded} ${units[unitIndex]}`;
+}
+
 export function escapeHtml(value) {
   return String(value)
     .replaceAll("&", "&amp;")

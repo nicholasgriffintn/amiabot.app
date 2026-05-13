@@ -8,6 +8,7 @@ import {
 } from "./report-view-model.js";
 import { computeBehavior } from "./runtime.js";
 import { bool, escapeHtml, formatValue } from "./utils.js";
+import { renderSurfacePanels } from "./surface-ui.js";
 
 export function renderReport(state, report, options = {}) {
   const verdict = report.verdict || {};
@@ -20,6 +21,7 @@ export function renderReport(state, report, options = {}) {
   renderCoverage(report.detections || []);
   renderServerSummary(report.server || {});
   renderBrowserSummary(state, report.client || {});
+  renderSurfacePanels(report, renderKv);
   renderNetworkIdentity(report);
   renderWebRtcComparison(report);
   renderWorkerConsistency(report);

@@ -111,6 +111,7 @@ function collectServerBasics(request) {
   const ip = getClientIp(request.headers);
   const ua = request.headers.get("user-agent") || "";
   const proxyHeaders = collectProxyHeaders(request.headers, SENSITIVE_HEADERS);
+  const url = new URL(request.url);
 
   return {
     ip,
@@ -120,7 +121,8 @@ function collectServerBasics(request) {
     headerNames: Object.keys(headers).sort(),
     headers,
     cf,
-    proxyHeaders
+    proxyHeaders,
+    performanceMemory: collectPingPerformanceMemory(url.searchParams)
   };
 }
 
@@ -213,6 +215,27 @@ function redactUrl(rawUrl) {
     if (/token|key|secret|pass|auth/i.test(key)) url.searchParams.set(key, "[redacted]");
   }
   return url.toString();
+}
+
+function collectPingPerformanceMemory(searchParams) {
+  const used = parseFiniteParam(searchParams, "heapUsed");
+  const total = parseFiniteParam(searchParams, "heapTotal");
+  const limit = parseFiniteParam(searchParams, "heapLimit");
+  const ratio = parseFiniteParam(searchParams, "heapRatio");
+  if (used == null && total == null && limit == null && ratio == null) return null;
+  return {
+    usedJSHeapSize: used,
+    totalJSHeapSize: total,
+    jsHeapSizeLimit: limit,
+    usedRatio: ratio
+  };
+}
+
+function parseFiniteParam(searchParams, name) {
+  const value = searchParams.get(name);
+  if (value == null || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
 }
 
 function analyzeHeaders(headers, ua) {
@@ -439,6 +462,7 @@ function scoreReport(report) {
   const automation = client.automation || {};
   const consistency = client.consistency || {};
   const network = client.network || {};
+  const surfaces = client.surfaces || {};
 
   const penalize = (points, id, severity, message, data = undefined) => {
     score -= points;
@@ -541,6 +565,10 @@ function scoreReport(report) {
       penalize(8, "browser_edge_latency_gap", "low", "Browser-to-edge fetch latency is much higher than Cloudflare TCP RTT.", { browserPing, cfTcp });
     }
   }
+  const memoryAnomalies = analyzePerformanceMemorySamples(network.ping?.memorySamples || surfaces.performance?.samples || []);
+  if (memoryAnomalies.length) {
+    penalize(12, "performance_memory_anomaly", "medium", "performance.memory samples contain impossible heap values.", memoryAnomalies);
+  }
 
   if (typeof behavior.score === "number") {
     if (behavior.score < 0.25) penalize(25, "behavior_score_low", "high", "Behavior score is very low.", behavior.summary);
@@ -552,6 +580,31 @@ function scoreReport(report) {
   const risk = score >= 75 ? "low" : score >= 45 ? "medium" : "high";
 
   return { score, classification, risk, reasons };
+}
+
+function analyzePerformanceMemorySamples(samples) {
+  if (!Array.isArray(samples)) return [];
+  const anomalies = [];
+  for (const sample of samples) {
+    if (!sample || sample.supported === false) continue;
+    const used = Number(sample.usedJSHeapSize);
+    const total = Number(sample.totalJSHeapSize);
+    const limit = Number(sample.jsHeapSizeLimit);
+    const ratio = Number(sample.usedRatio);
+    const data = { t: sample.t ?? null, usedJSHeapSize: used, totalJSHeapSize: total, jsHeapSizeLimit: limit, usedRatio: ratio };
+
+    if (![used, total, limit].every((value) => Number.isFinite(value) && value > 0)) {
+      anomalies.push({ id: "memory_non_positive_or_missing", ...data });
+    } else {
+      if (used > total) anomalies.push({ id: "heap_used_exceeds_total", ...data });
+      if (total > limit) anomalies.push({ id: "heap_total_exceeds_limit", ...data });
+      if (limit < 128 * 1024 * 1024) anomalies.push({ id: "heap_limit_too_small", ...data });
+    }
+    if (Number.isFinite(ratio) && (ratio < 0 || ratio > 1.05)) {
+      anomalies.push({ id: "heap_ratio_out_of_range", ...data });
+    }
+  }
+  return anomalies.slice(0, 8);
 }
 
 function detectionMatrix(server, client) {
@@ -577,6 +630,8 @@ function detectionMatrix(server, client) {
     rows.push(
       { name: "Browser data", status: "checked", notes: "Navigator, screen, storage, media, permissions, and client hints." },
       { name: "Browser fingerprint", status: "checked", notes: "Canvas, WebGL, audio, fonts, and graphics capability hashes." },
+      { name: "Fingerprint surfaces", status: "checked", notes: "Performance memory, resource timing, EME, speech voices, feature policy, and sensor surfaces." },
+      { name: "Performance memory pings", status: "checked", notes: "Heap used, heap total, and heap limit are sent with latency pings and checked for impossible values." },
       { name: "Worker consistency", status: "checked", notes: "Cross-context browser consistency checks." },
       { name: "WebRTC network clues", status: "checked", notes: "Candidate and address consistency signals." },
       { name: "Latency", status: "checked", notes: "Browser-to-edge timing signals." },

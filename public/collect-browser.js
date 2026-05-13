@@ -159,7 +159,15 @@ async function collectMediaDevices() {
       counts[device.kind] = (counts[device.kind] || 0) + 1;
       if (device.label) labelsVisible += 1;
     }
-    return { supported: true, counts, labelsVisible, total: devices.length };
+    return {
+      supported: true,
+      counts,
+      labelsVisible,
+      total: devices.length,
+      supportedConstraints: navigator.mediaDevices.getSupportedConstraints
+        ? Object.entries(navigator.mediaDevices.getSupportedConstraints()).filter(([, value]) => value === true).map(([name]) => name).sort()
+        : []
+    };
   });
 }
 
