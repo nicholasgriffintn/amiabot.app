@@ -42,6 +42,20 @@ Am I a Bot? is a transparent bot/proxy/VPN detection site for browser automation
 - Transparent behavior score from pointer, key, scroll, focus, RAF jitter, and challenge completion.
 - Optional interaction challenge: form submit, confirm dialog, table update task.
 
+## Website
+
+https://amiabot.app serves a static page with the above checks and reports results in a friendly format.
+
+It will initially ping the server periodically and on interactions, after a set amount, it will send a request for a full report and then display the results.
+
+## Bot-facing API
+
+Server-only quick check that is useful for node only environments:
+
+```bash
+curl https://amiabot.app/api/check
+```
+
 ## Local development
 
 ```bash
@@ -50,26 +64,17 @@ pnpm install
 pnpm dev
 ```
 
-Open the Wrangler local URL. Service Worker checks require a secure context; localhost is usually treated as secure by modern browsers.
+Open the Wrangler local URL.
 
-## Deploy manually
+Note: Service Worker checks require a secure context; localhost is usually treated as secure by modern browsers.
+
+## Deploy
 
 ```bash
 corepack enable
 pnpm install
 pnpm deploy
 ```
-
-## Deploy with GitHub Actions
-
-Add these repository secrets:
-
-| Secret | Purpose |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Workers edit permissions |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
-
-Push to `main`. The workflow runs a static syntax check and deploys with Wrangler.
 
 ## Proxy/VPN detection providers
 
@@ -97,33 +102,3 @@ Supported values:
 | `ipinfo` | `IPINFO_TOKEN` | Uses IPinfo privacy endpoint. |
 | `ipqs` | `IPQUALITYSCORE_KEY` | Uses IPQualityScore proxy/VPN API. |
 | `none` | none | Disables external IP intelligence. |
-
-## Bot-facing API
-
-Server-only quick check:
-
-```bash
-curl https://YOUR-WORKER.workers.dev/api/check
-```
-
-Browser report endpoint:
-
-```http
-POST /api/report
-Content-Type: application/json
-```
-
-The web page posts a client-side payload to this endpoint. Response includes:
-
-- `verdict.score` from 0 to 100.
-- `verdict.classification`: `likely_human`, `suspicious`, or `likely_bot`.
-- `verdict.reasons` with transparent penalties.
-- `server`, `client`, and `detections` details.
-
-## Custom domain
-
-In Cloudflare dashboard: **Workers & Pages → your Worker → Settings → Domains & Routes → Add Custom Domain**.
-
-## Tuning
-
-Edit `scoreReport()` in `src/worker.js` to change thresholds and penalties. The scorer is intentionally transparent and conservative. It is for debugging automation fingerprints, not for blocking production traffic as-is.
