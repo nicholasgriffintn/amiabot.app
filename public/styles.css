@@ -182,7 +182,13 @@ h3 {
   border: 1px solid rgba(34, 211, 238, 0.45);
   border-radius: 50%;
   background:
-    conic-gradient(from 20deg, rgba(34, 211, 238, 0.05), rgba(34, 211, 238, 0.42), rgba(250, 204, 21, 0.3), rgba(34, 211, 238, 0.05));
+    conic-gradient(from -90deg, var(--scanner-tone, var(--accent)) calc(var(--scanner-score, 0) * 1%), rgba(148, 163, 184, 0.1) 0),
+    radial-gradient(circle at center, rgba(34, 211, 238, 0.2), rgba(34, 211, 238, 0.03) 62%, transparent 63%);
+  transition: background 220ms ease, border-color 220ms ease;
+}
+
+.scanner-ring::before {
+  transform: rotate(var(--scanner-angle, 0deg));
 }
 
 .scanner-ring::before,
@@ -201,16 +207,28 @@ h3 {
 
 .scanner-ring span {
   position: absolute;
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--accent-3);
-  box-shadow: 0 0 18px rgba(163, 230, 53, 0.66);
+  background: var(--dot-color, var(--subtle));
+  box-shadow: 0 0 18px color-mix(in srgb, var(--dot-color, var(--subtle)) 62%, transparent);
+  transition: background 180ms ease, transform 220ms ease;
 }
 
-.scanner-ring span:nth-child(1) { transform: translate(48px, -36px); }
-.scanner-ring span:nth-child(2) { transform: translate(-54px, 28px); background: var(--accent); }
-.scanner-ring span:nth-child(3) { transform: translate(18px, 58px); background: var(--accent-2); }
+.scanner-ring span:nth-child(1) { transform: rotate(-42deg) translateX(62px); }
+.scanner-ring span:nth-child(2) { transform: rotate(64deg) translateX(62px); }
+.scanner-ring span:nth-child(3) { transform: rotate(155deg) translateX(62px); }
+.scanner-ring span:nth-child(4) { transform: rotate(245deg) translateX(62px); }
+
+.scanner-ring .dot-good { --dot-color: var(--good); }
+.scanner-ring .dot-warn { --dot-color: var(--warn); }
+.scanner-ring .dot-bad { --dot-color: var(--bad); }
+.scanner-ring .dot-muted { --dot-color: var(--subtle); }
+
+.scanner-low { --scanner-tone: var(--good); border-color: rgba(74, 222, 128, 0.72); }
+.scanner-medium { --scanner-tone: var(--warn); border-color: rgba(245, 158, 11, 0.78); }
+.scanner-high { --scanner-tone: var(--bad); border-color: rgba(251, 113, 133, 0.78); }
+.scanner-pending { --scanner-tone: var(--accent); }
 
 .scanner-readout {
   display: grid;
