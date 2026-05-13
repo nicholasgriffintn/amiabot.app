@@ -173,4 +173,91 @@ describe("server-side report consistency", () => {
       "mobile_touch_mismatch"
     ]));
   });
+
+  it("scores high-entropy UA-CH drift across request and worker contexts", async () => {
+    const response = await worker.fetch(new Request("https://amiabot.example/api/report", {
+      method: "POST",
+      headers: {
+        ...requestHeaders,
+        "content-type": "application/json",
+        "sec-ch-ua-arch": '"arm"',
+        "sec-ch-ua-bitness": '"64"',
+        "sec-ch-ua-platform-version": '"14.0.0"',
+        "sec-ch-ua-wow64": "?0"
+      },
+      body: JSON.stringify({
+        browser: {
+          userAgent: requestHeaders["user-agent"],
+          userAgentData: {
+            platform: "macOS",
+            mobile: false,
+            highEntropy: {
+              architecture: "x86",
+              bitness: "64",
+              platformVersion: "14.0.0",
+              wow64: false
+            }
+          },
+          languages: ["en-GB", "en"],
+          webdriver: false,
+          plugins: [{ name: "PDF Viewer" }]
+        },
+        automation: { present: [], cdpSerializationSignal: false },
+        workers: {
+          webWorker: {
+            userAgentData: {
+              highEntropy: {
+                architecture: "x86",
+                bitness: "64",
+                platformVersion: "14.0.0",
+                wow64: false
+              }
+            }
+          },
+          serviceWorker: {
+            userAgentData: {
+              highEntropy: {
+                architecture: "arm",
+                bitness: "64",
+                platformVersion: "14.0.0",
+                wow64: false
+              }
+            }
+          }
+        },
+        fingerprints: { webgl: { supported: true } },
+        consistency: {},
+        behavior: { score: 1 },
+        network: {},
+        surfaces: {}
+      })
+    }), createWorkerEnv(), {});
+    const body = await response.json();
+    const reasonIds = body.verdict.reasons.map((reason) => reason.id);
+
+    expect(body.client.consistency.clientHintHighEntropyMismatch).toMatchObject({
+      mismatches: [
+        {
+          field: "architecture",
+          requestValue: "arm",
+          browserValue: "x86"
+        }
+      ]
+    });
+    expect(body.client.consistency.userAgentDataHighEntropyMismatch).toMatchObject({
+      reference: "Window",
+      mismatches: [
+        {
+          field: "architecture",
+          context: "Service Worker",
+          referenceValue: "x86",
+          contextValue: "arm"
+        }
+      ]
+    });
+    expect(reasonIds).toEqual(expect.arrayContaining([
+      "client_hint_high_entropy_mismatch",
+      "ua_data_high_entropy_mismatch"
+    ]));
+  });
 });

@@ -87,4 +87,25 @@ describe("Worker proxy header verdicts", () => {
       data: { via: "1.1 proxy.example" }
     });
   });
+
+  it("redacts proxy authorization values in reports and verdict evidence", async () => {
+    const request = new Request("https://amiabot.example/api/check", {
+      headers: {
+        ...browserHeaders,
+        "proxy-authorization": "Basic secret"
+      }
+    });
+
+    const response = await worker.fetch(request, createWorkerEnv(), {});
+    const data = await response.json();
+    const proxyReason = data.verdict.reasons.find((reason) => reason.id === "proxy_headers");
+
+    expect(data.server.proxyHeaders).toMatchObject({
+      "proxy-authorization": "[redacted]"
+    });
+    expect(proxyReason).toMatchObject({
+      data: { "proxy-authorization": "[redacted]" }
+    });
+    expect(JSON.stringify(data)).not.toContain("Basic secret");
+  });
 });

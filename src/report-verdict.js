@@ -1,5 +1,7 @@
 import { getSuspiciousProxyHeaders } from "./proxy-headers.js";
 import {
+  collectClientHintHighEntropyMismatches,
+  collectUserAgentDataHighEntropyMismatches,
   languageListsOverlap,
   normalizeBrowserLanguages,
   normalizePlatformLabel,
@@ -43,6 +45,26 @@ export function enrichClientConsistency(client, server) {
       requestMobile: requestUaMobile,
       browserMobile: browserUaMobile
     };
+  }
+
+  const clientHintHighEntropyMismatches = collectClientHintHighEntropyMismatches(
+    server?.headers,
+    client.browser?.userAgentData?.highEntropy
+  );
+  if (clientHintHighEntropyMismatches.length) {
+    consistency.clientHintHighEntropyMismatch = {
+      mismatches: clientHintHighEntropyMismatches
+    };
+  }
+
+  const uaDataHighEntropyMismatch = collectUserAgentDataHighEntropyMismatches({
+    Window: client.browser,
+    "Web Worker": client.workers?.webWorker,
+    Iframe: client.workers?.iframe,
+    "Service Worker": client.workers?.serviceWorker
+  });
+  if (uaDataHighEntropyMismatch) {
+    consistency.userAgentDataHighEntropyMismatch = uaDataHighEntropyMismatch;
   }
 
   const uaLooksMobile = /android|iphone|ipad|ipod|mobile/i.test(browserUserAgent || requestUserAgent || "");
@@ -179,6 +201,12 @@ export function scoreReport(report) {
   }
   if (consistency.clientHintMobileMismatch) {
     penalize(12, "client_hint_mobile_mismatch", "medium", "Request UA-CH mobile hint differs from browser-reported UA data mobile flag.", consistency.clientHintMobileMismatch);
+  }
+  if (consistency.clientHintHighEntropyMismatch) {
+    penalize(14, "client_hint_high_entropy_mismatch", "medium", "Request high-entropy UA-CH hints differ from browser-reported UA data.", consistency.clientHintHighEntropyMismatch);
+  }
+  if (consistency.userAgentDataHighEntropyMismatch) {
+    penalize(14, "ua_data_high_entropy_mismatch", "medium", "High-entropy UA data differs across browser execution contexts.", consistency.userAgentDataHighEntropyMismatch);
   }
   if (consistency.mobileTouchMismatch) {
     penalize(12, "mobile_touch_mismatch", "medium", "Mobile User-Agent has no matching touch capability surface.", consistency.mobileTouchMismatch);
