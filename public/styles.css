@@ -260,16 +260,24 @@ h3 {
   gap: 10px;
 }
 
-button {
+button,
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 42px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel-2);
   color: var(--text);
   padding: 10px 14px;
-  cursor: pointer;
   font: inherit;
   font-weight: 780;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
 }
 
 button:first-child {
@@ -278,7 +286,9 @@ button:first-child {
 }
 
 button:hover:not(:disabled),
-button:focus-visible {
+.action-link:hover,
+button:focus-visible,
+.action-link:focus-visible {
   border-color: var(--accent);
   outline: none;
   box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.16);
@@ -940,7 +950,8 @@ input[type="checkbox"] {
     justify-self: center;
   }
 
-  .actions button { flex: 1 1 160px; }
+  .actions button,
+  .actions .action-link { flex: 1 1 160px; }
 
   .form-grid { grid-template-columns: 1fr; }
 
