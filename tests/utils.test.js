@@ -68,8 +68,10 @@ describe("formatting and platform helpers", () => {
   it("guesses OS families from user agent and platform strings", () => {
     expect(guessUaOs("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")).toBe("macos");
     expect(guessUaOs("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")).toBe("windows");
+    expect(guessUaOs("Mozilla/5.0 (Linux; Android 14; Pixel 8)")).toBe("android");
     expect(guessPlatformOs("MacIntel")).toBe("macos");
     expect(guessPlatformOs("Linux x86_64")).toBe("linux");
+    expect(guessPlatformOs("Linux armv8l")).toBe("android");
   });
 });
 

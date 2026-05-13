@@ -56,7 +56,7 @@ export function guessPlatformOs(platform) {
   if (/Win/i.test(platform)) return "windows";
   if (/iPhone|iPad|iPod/i.test(platform)) return "ios";
   if (/Mac/i.test(platform)) return "macos";
-  if (/Android/i.test(platform)) return "android";
+  if (/Android|Linux armv/i.test(platform)) return "android";
   if (/Linux|X11/i.test(platform)) return "linux";
   return null;
 }

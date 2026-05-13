@@ -42,6 +42,8 @@ export function scoreReport(report) {
   const consistency = client.consistency || {};
   const network = client.network || {};
   const surfaces = client.surfaces || {};
+  const userAgent = browser.userAgent || "";
+  const isMobileBrowser = /android|iphone|ipad|ipod|mobile/i.test(userAgent);
 
   const penalize = (points, id, severity, message, data = undefined) => {
     score -= points;
@@ -85,7 +87,7 @@ export function scoreReport(report) {
   }
 
   if (browser.webdriver === true) penalize(40, "navigator_webdriver", "high", "navigator.webdriver is true.");
-  if (/headlesschrome|phantomjs|slimerjs/i.test(browser.userAgent || "")) {
+  if (/headlesschrome|phantomjs|slimerjs/i.test(userAgent)) {
     penalize(40, "client_headless_user_agent", "high", "Client User-Agent contains headless marker.");
   }
   if (automation.present?.length) {
@@ -114,7 +116,7 @@ export function scoreReport(report) {
   if (browser.permissions?.notifications?.state === "default" && browser.permissions?.notifications?.permission === "default") {
     penalize(8, "notification_permission_default_state", "low", "Notification permission state is 'default'; stealth tooling has historically produced this mismatch.");
   }
-  if (browser.plugins?.length === 0 && /chrome|chromium|edg/i.test(browser.userAgent || "")) {
+  if (browser.plugins?.length === 0 && /chrome|chromium|edg/i.test(userAgent) && !isMobileBrowser) {
     penalize(10, "empty_plugins_chromium", "medium", "Chromium-like browser reports zero plugins.");
   }
   if (browser.prototypeChecks?.nativeGetterFailures?.length) {

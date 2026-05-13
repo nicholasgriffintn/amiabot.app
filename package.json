@@ -8,9 +8,11 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "check": "for file in src/*.js public/*.js; do node --check \"$file\"; done",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "vitest": "^4.0.14",
     "wrangler": "^4.90.0"
   }
